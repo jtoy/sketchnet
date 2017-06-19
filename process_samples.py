@@ -1,6 +1,6 @@
 import argparse,os,glob,re
 parser = argparse.ArgumentParser()
-parser.add_argument('--images', type=str, default="../sketchnet_test" , help='path to images')
+parser.add_argument('--images', type=str, default="./test_images" , help='path to images')
 parser.add_argument('--name', type=str, help='model name')
 #parser.add_argument('--model_path', type=str, default='./models/', help='path for trained encoder/decoder/vocab')
 #parser.add_argument('--output_path', type=str, default='./models/', help='path for trained encoder/decoder/vocab')
