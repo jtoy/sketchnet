@@ -38,8 +38,6 @@ def build_vocab(path, threshold,debug):
             if file.endswith(".txt"):
                 with open(os.path.join(root,file), 'r') as f:
                     code = str(f.read())
-                    #print(code)
-#                   tokens = re.findall(r"[-+]?[0-9]*\.?[0-9]+(?:[eE][-+]?[0-9]+)?|[^\W\d]+|\d+|[\W]", code)
                     tokens = parse_code(code)
                     if debug == True:
                         print(tokens)

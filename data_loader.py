@@ -46,8 +46,8 @@ class ProcessingDataset(data.Dataset):
 
         # Convert caption (string) to word ids.
         #TODO move this function into vocab builder
-        tokens = re.findall(r"[^\W\d]+|\d+|[\W]", code)
-        #tokens = parse_code(code)
+        #tokens = re.findall(r"[^\W\d]+|\d+|[\W]", code)
+        tokens = parse_code(code)
         code = []
         code.append(vocab('<start>'))
         code.extend([vocab(token) for token in tokens])

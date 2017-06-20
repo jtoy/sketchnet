@@ -7,6 +7,7 @@ import pickle
 import json
 from data_loader import get_loader 
 from build_vocab import Vocabulary
+from build_vocab import build_vocab
 from model import EncoderCNN, DecoderRNN 
 from torch.autograd import Variable 
 from torch.nn.utils.rnn import pack_padded_sequence
@@ -50,8 +51,15 @@ def main(args):
         transforms.ToTensor() ])
     
     # Load vocabulary wrapper.
-    with open(args.vocab_path, 'rb') as f:
-        vocab = pickle.load(f)
+    if args.vocab_path is not None:
+        with open(args.vocab_path, 'rb') as f:
+            vocab = pickle.load(f)
+    else:
+        print("building new vocab")
+        vocab = build_vocab(args.image_dir,1,None)
+        with open((args.model_path+"/vocab.pkl"), 'wb') as f:
+            pickle.dump(vocab, f)
+
     
     # Build data loader
     data_loader = get_loader(args.image_dir,  vocab, 
@@ -132,8 +140,7 @@ if __name__ == '__main__':
                         help='name of model')
     parser.add_argument('--crop_size', type=int, default=224 ,
                         help='size for randomly cropping images')
-    parser.add_argument('--vocab_path', type=str, default='./data/vocab.pkl',
-                        help='path for vocabulary wrapper')
+    parser.add_argument('--vocab_path', type=str, help='path for vocabulary wrapper')
     parser.add_argument('--image_dir', type=str, default='./data/resized2014' ,
                         help='directory for resized images')
     parser.add_argument('--log_step', type=int , default=10,
