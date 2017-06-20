@@ -27,14 +27,15 @@ def load_image(image_path, transform=None):
 def main(args):
     # Image preprocessing
     transform = transforms.Compose([ 
-        #transforms.Scale(args.crop_size),  
+        transforms.Scale(args.crop_size),  
         #transforms.CenterCrop(args.crop_size),
         transforms.ToTensor(), 
-        transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))])
+        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)) ])
     
     # Load vocabulary wrapper
     with open(args.vocab_path, 'rb') as f:
         vocab = pickle.load(f)
+    print(vocab)
 
     # Build Models
     encoder = EncoderCNN(args.embed_size)

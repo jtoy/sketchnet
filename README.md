@@ -10,7 +10,6 @@ As far as we know, this should be the first working model to generate working us
 # problem areas
 
 * The model will most likely fail to generate realistic looking images. future models will need to work with more realistic looking images
-* model architect . we can reference sketch-rnn. Are we using LSTMs? RNNs? CNNs?  
 
 * how do we measure performance of the model?  The model should generate valid code. We can use a javascript parser to know if we are generating valid code.  How can we know if the pictures are valid though? We can test if the images produce any color, which they should besides just white.  
 
@@ -82,13 +81,6 @@ variants:
 * setup research log
 * be able to regenerate test with code revision/data revision/hyper parameters
 * each training requires a unique path/model to store to, dont allow a default, we want to put the name of the revision in general
-
-# Genetic Programming fitness function
-* is the canvas not pure white
-* memorability score
-
-
-
 
 # command to run
 
