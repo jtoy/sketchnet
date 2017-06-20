@@ -72,6 +72,7 @@ def main(args):
     decoder = DecoderRNN(args.embed_size, args.hidden_size, 
                          len(vocab), args.num_layers)
     
+    print(decoder)
     if torch.cuda.is_available():
         encoder.cuda()
         decoder.cuda()
