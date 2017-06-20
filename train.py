@@ -57,7 +57,7 @@ def main(args):
     else:
         print("building new vocab")
         vocab = build_vocab(args.image_dir,1,None)
-        with open((args.model_path+"/vocab.pkl"), 'wb') as f:
+        with open((full_model_path+"/vocab.pkl"), 'wb') as f:
             pickle.dump(vocab, f)
 
     

@@ -35,7 +35,6 @@ def main(args):
     # Load vocabulary wrapper
     with open(args.vocab_path, 'rb') as f:
         vocab = pickle.load(f)
-    print(vocab)
 
     # Build Models
     encoder = EncoderCNN(args.embed_size)
