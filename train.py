@@ -1,11 +1,6 @@
-import argparse
-import torch
 import torch.nn as nn
 import numpy as np
-import os
-import pickle
-import json
-import time
+import torch,os,pickle,json,time,argparse
 from utils import *
 from data_loader import get_loader 
 from build_vocab import Vocabulary
@@ -24,7 +19,7 @@ def to_var(x,volatile=False):
 def main(args):
     #setup tensorboard
     cc = CrayonClient(hostname="localhost")
-    print(cc.get_experiment_names())
+    #print(cc.get_experiment_names())
     #if args.name in cc.get_experiment_names():
     try:
         cc.remove_experiment(args.name)
@@ -81,8 +76,8 @@ def main(args):
 
     # Loss and Optimizer
     criterion = nn.CrossEntropyLoss()
-    #params = list(decoder.parameters()) + list(encoder.linear.parameters()) + list(encoder.bn.parameters())
-    params = list(decoder.parameters()) #+ list(encoder.linear.parameters()) + list(encoder.bn.parameters())
+    params = list(decoder.parameters()) + list(encoder.linear.parameters()) + list(encoder.bn.parameters())
+    #params = list(decoder.parameters()) #+ list(encoder.linear.parameters()) + list(encoder.bn.parameters())
     optimizer = torch.optim.Adam(params, lr=args.learning_rate)
     start_time = time.time()
     add_log_entry(args.name,start_time,vars(args))
@@ -96,18 +91,17 @@ def main(args):
             captions = to_var(captions)
             targets = pack_padded_sequence(captions, lengths, batch_first=True)[0]
             count = images.size()[0]
-            mini_ts = torch.FloatTensor(count,3,30,30)
-            for ii,image in enumerate(images): 
-                mini_ts[ii] = mini_transform(image)
-            mini_ts = to_var(mini_ts.view(count,-1),volatile=False)
+            #mini_ts = torch.FloatTensor(count,3,30,30)
+            #for ii,image in enumerate(images): 
+            #    mini_ts[ii] = mini_transform(image)
+            #mini_ts = to_var(mini_ts.view(count,-1),volatile=False)
             #print(torch.cat(image_ts,new_mini_ts))
             
             # Forward, Backward and Optimize
             decoder.zero_grad()
             encoder.zero_grad()
             features = encoder(image_ts)
-            #wtf = to_var(torch.rand(128,4800),volatile=False)
-            outputs = decoder(mini_ts, captions, lengths)
+            outputs = decoder(features, captions, lengths)
 
             loss = criterion(outputs, targets)
             cc_server.add_scalar_value("train_loss", loss.data[0])
@@ -129,8 +123,10 @@ def main(args):
                 torch.save(encoder.state_dict(), 
                            os.path.join(full_model_path, 
                                         'encoder-%d-%d.pkl' %(epoch+1, i+1)))
+                           
     torch.save(decoder.state_dict(), os.path.join(full_model_path, 'decoder-%d-%d.pkl' %(epoch+1, i+1)))
     torch.save(encoder.state_dict(), os.path.join(full_model_path, 'encoder-%d-%d.pkl' %(epoch+1, i+1)))
+    end_time = time.time()
                 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -141,8 +137,7 @@ if __name__ == '__main__':
     parser.add_argument('--crop_size', type=int, default=224 ,
                         help='size for randomly cropping images')
     parser.add_argument('--vocab_path', type=str, help='path for vocabulary wrapper')
-    parser.add_argument('--image_dir', type=str, default='./data/resized2014' ,
-                        help='directory for resized images')
+    parser.add_argument('--image_dir', type=str, help='directory for images')
     parser.add_argument('--log_step', type=int , default=10,
                         help='step size for prining log info')
     parser.add_argument('--save_step', type=int , default=1000,
