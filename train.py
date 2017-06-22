@@ -47,7 +47,7 @@ def main(args):
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
     mini_transform = transforms.Compose([ 
         transforms.ToPILImage(),
-        transforms.Scale(40),
+        transforms.Scale(30),
         transforms.ToTensor() ])
     
     # Load vocabulary wrapper.
@@ -79,8 +79,8 @@ def main(args):
 
     # Loss and Optimizer
     criterion = nn.CrossEntropyLoss()
-    params = list(decoder.parameters()) + list(encoder.linear.parameters()) + list(encoder.bn.parameters())
-    #params = list(decoder.parameters()) #+ list(encoder.linear.parameters()) + list(encoder.bn.parameters())
+    #params = list(decoder.parameters()) + list(encoder.linear.parameters()) + list(encoder.bn.parameters())
+    params = list(decoder.parameters()) #+ list(encoder.linear.parameters()) + list(encoder.bn.parameters())
     optimizer = torch.optim.Adam(params, lr=args.learning_rate)
     
     # Train the Models
@@ -91,24 +91,19 @@ def main(args):
             image_ts = to_var(images, volatile=True)
             captions = to_var(captions)
             targets = pack_padded_sequence(captions, lengths, batch_first=True)[0]
-
-            #mini_ts = torch.IntTensor(128,3,40,40)
-            #for ii,image in enumerate(images): 
-            #    mini_ts[ii] = mini_transform(image)
-            #mini_ts = to_var(mini_ts.view(128,-1),volatile=True)
-            #print(mini_ts.size())
-            #print(image_ts.size())
-            #print(type(mini_ts))
-            #print(type(image_ts))
-            #new_mini_ts =mini_ts.view(128,-1)
-            #print(new_mini_ts.size())
+            count = images.size()[0]
+            mini_ts = torch.FloatTensor(count,3,30,30)
+            for ii,image in enumerate(images): 
+                mini_ts[ii] = mini_transform(image)
+            mini_ts = to_var(mini_ts.view(count,-1),volatile=False)
             #print(torch.cat(image_ts,new_mini_ts))
             
             # Forward, Backward and Optimize
             decoder.zero_grad()
             encoder.zero_grad()
             features = encoder(image_ts)
-            outputs = decoder(features, captions, lengths)
+            #wtf = to_var(torch.rand(128,4800),volatile=False)
+            outputs = decoder(mini_ts, captions, lengths)
 
             loss = criterion(outputs, targets)
             cc_server.add_scalar_value("train_loss", loss.data[0])
