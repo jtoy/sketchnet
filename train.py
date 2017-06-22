@@ -5,6 +5,8 @@ import numpy as np
 import os
 import pickle
 import json
+import time
+from utils import *
 from data_loader import get_loader 
 from build_vocab import Vocabulary
 from build_vocab import build_vocab
@@ -82,6 +84,8 @@ def main(args):
     #params = list(decoder.parameters()) + list(encoder.linear.parameters()) + list(encoder.bn.parameters())
     params = list(decoder.parameters()) #+ list(encoder.linear.parameters()) + list(encoder.bn.parameters())
     optimizer = torch.optim.Adam(params, lr=args.learning_rate)
+    start_time = time.time()
+    add_log_entry(args.name,start_time,vars(args))
     
     # Train the Models
     total_step = len(data_loader)
