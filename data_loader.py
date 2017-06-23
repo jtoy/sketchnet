@@ -10,12 +10,14 @@ from build_vocab import parse_code
 
 def make_dataset(dir):
     folders = []
+    counter = 0
     for root, dirs, files in os.walk(os.path.abspath(dir)):
         for file in files:
             if file.endswith(".txt"):
-                #fpath = os.path.join(root, file)
+                counter += 1
                 folders.append(root)
-
+    print(counter)
+    print(len(folders))
     return folders
 
 class ProcessingDataset(data.Dataset):
@@ -56,6 +58,7 @@ class ProcessingDataset(data.Dataset):
         return image, target
 
     def __len__(self):
+        #print(self.folders)
         return len(self.folders)
 
 
@@ -63,7 +66,7 @@ def collate_fn(data):
     """Creates mini-batch tensors from the list of tuples (image, caption).
     
     We should build custom collate_fn rather than using default collate_fn, 
-    because merging caption (including padding) is not supported in default.
+    because merging code (including padding) is not supported in default.
 
     Args:
         data: list of tuple (image, caption). 
@@ -93,7 +96,6 @@ def collate_fn(data):
 
 def get_loader(root,  vocab, transform, batch_size, shuffle, num_workers):
     """Returns torch.utils.data.DataLoader for custom processing dataset."""
-    # COCO caption dataset
     processing = ProcessingDataset(root=root,
                        vocab=vocab,
                        transform=transform)
