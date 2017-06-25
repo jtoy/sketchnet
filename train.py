@@ -2,7 +2,7 @@ import torch.nn as nn
 import numpy as np
 import torch,os,pickle,json,time,argparse
 from utils import *
-from data_loader import get_loader 
+from data_loader import * #get_loader,validation_split
 from build_vocab import Vocabulary
 from build_vocab import build_vocab
 from model import EncoderCNN, DecoderRNN 
@@ -17,6 +17,7 @@ def to_var(x,volatile=False):
     return Variable(x,volatile=volatile)
 
 def main(args):
+
     #setup tensorboard
     cc = CrayonClient(hostname="localhost")
     #print(cc.get_experiment_names())
@@ -25,7 +26,6 @@ def main(args):
         cc.remove_experiment(args.name)
     except:
         print("experiment didnt exist")
-        pass
     cc_server = cc.create_experiment(args.name)
 
     # Create model directory
@@ -44,7 +44,7 @@ def main(args):
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
     mini_transform = transforms.Compose([ 
         transforms.ToPILImage(),
-        transforms.Scale(30),
+        transforms.Scale(20),
         transforms.ToTensor() ])
     
     # Load vocabulary wrapper.
@@ -59,16 +59,18 @@ def main(args):
 
     
     # Build data loader
-    data_loader = get_loader(args.image_dir,  vocab, 
-                             transform, args.batch_size,
-                             shuffle=True, num_workers=args.num_workers) 
+    data_loader = get_loader(args.image_dir,  vocab, transform, args.batch_size, shuffle=True, num_workers=args.num_workers) 
+    code_data_set = ProcessingDataset(root=args.image_dir, vocab=vocab, transform=transform)
+    train_ds, val_ds = validation_split(code_data_set)
+    train_loader = torch.utils.data.DataLoader(train_ds,collate_fn=collate_fn)
+    test_loader = torch.utils.data.DataLoader(val_ds,collate_fn=collate_fn)
+    train_size = len(train_loader)
+    test_size = len(test_loader)
 
     # Build the models
     encoder = EncoderCNN(args.embed_size)
     print(encoder)
-    decoder = DecoderRNN(args.embed_size, args.hidden_size, 
-                         len(vocab), args.num_layers)
-    
+    decoder = DecoderRNN(args.embed_size+1200, args.hidden_size, len(vocab), args.num_layers)
     print(decoder)
     if torch.cuda.is_available():
         encoder.cuda()
@@ -83,26 +85,32 @@ def main(args):
     add_log_entry(args.name,start_time,vars(args))
     
     # Train the Models
-    total_step = len(data_loader)
+    total_step = len(train_loader)
     for epoch in range(args.num_epochs):
-        for i, (images, captions, lengths) in enumerate(data_loader):
+        for i, (images, captions, lengths) in enumerate(train_loader):
+            decoder.train()
+            encoder.train()
             # Set mini-batch dataset
             image_ts = to_var(images, volatile=True)
             captions = to_var(captions)
             targets = pack_padded_sequence(captions, lengths, batch_first=True)[0]
             count = images.size()[0]
-            #mini_ts = torch.FloatTensor(count,3,30,30)
-            #for ii,image in enumerate(images): 
-            #    mini_ts[ii] = mini_transform(image)
-            #mini_ts = to_var(mini_ts.view(count,-1),volatile=False)
+            mini_ts = torch.FloatTensor(count,3,20,20)
+            for ii,image in enumerate(images): 
+                mini_ts[ii] = mini_transform(image)
+            mini_ts = to_var(mini_ts.view(count,-1),volatile=False)
             #print(torch.cat(image_ts,new_mini_ts))
             
             # Forward, Backward and Optimize
             decoder.zero_grad()
             encoder.zero_grad()
             features = encoder(image_ts)
-            outputs = decoder(features, captions, lengths)
+            combined_features = torch.cat([features.data,mini_ts.data],1)
+            #print(combined_features.size())
+            outputs = decoder(to_var(combined_features), captions, lengths)
 
+            print(targets.size())
+            print(outputs.size())
             loss = criterion(outputs, targets)
             cc_server.add_scalar_value("train_loss", loss.data[0])
             cc_server.add_scalar_value("perplexity", np.exp(loss.data[0]))
@@ -123,10 +131,34 @@ def main(args):
                 torch.save(encoder.state_dict(), 
                            os.path.join(full_model_path, 
                                         'encoder-%d-%d.pkl' %(epoch+1, i+1)))
+            if i%int(train_size/10) == 0:
+                encoder.eval()
+                decoder.eval()
+                correct = 0
+                for ti, (timages, tcaptions, tlengths) in enumerate(test_loader):
+                    timage_ts = to_var(timages, volatile=True)
+                    tcaptions = to_var(tcaptions)
+                    ttargets = pack_padded_sequence(tcaptions, tlengths, batch_first=True)[0]
+                    tcount = timages.size()[0]
+                    tmini_ts = torch.FloatTensor(tcount,3,20,20)
+                    for tii,timage in enumerate(timages): 
+                        tmini_ts[tii] = mini_transform(timage)
+                    tmini_ts = to_var(tmini_ts.view(count,-1),volatile=False)
+                    tfeatures = encoder(timage_ts)
+                    tcombined_features = torch.cat([tfeatures.data,tmini_ts.data],1)
+                    toutputs = decoder(to_var(tcombined_features), tcaptions, tlengths)
+                    print(ttargets)
+                    print(toutputs)
+                    correct = (ttargets == toutputs).sum()
+                    
+                accuracy = 100 * correct / test_size
+                print('accuracy: %.4f' %(accuracy)) 
+                cc_server.add_scalar_value("accuracy", accuracy)
                            
     torch.save(decoder.state_dict(), os.path.join(full_model_path, 'decoder-%d-%d.pkl' %(epoch+1, i+1)))
     torch.save(encoder.state_dict(), os.path.join(full_model_path, 'encoder-%d-%d.pkl' %(epoch+1, i+1)))
     end_time = time.time()
+    print("finished training, runtime: %d",[(end_time-start_time)])
                 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

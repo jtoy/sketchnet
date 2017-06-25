@@ -10,10 +10,6 @@ from build_vocab import Vocabulary
 from model import EncoderCNN, DecoderRNN
 from PIL import Image
 
-def to_var(x, volatile=False):
-    if torch.cuda.is_available():
-        x = x.cuda()
-    return Variable(x, volatile=volatile)
 
 def load_image(image_path, transform=None):
     image = Image.open(image_path)
@@ -50,10 +46,6 @@ def main(args):
     # Prepare Image       
     image = load_image(args.image,transform)
     image_tensor = to_var(image,volatile=True)
-    
-    # Set initial states
-    state = (Variable(torch.zeros(args.num_layers, 1, args.hidden_size),volatile=True),
-             Variable(torch.zeros(args.num_layers, 1, args.hidden_size),volatile=True))
     
     # If use gpu
     if torch.cuda.is_available():

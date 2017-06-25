@@ -8,26 +8,37 @@ import numpy as np
 from PIL import Image
 from build_vocab import parse_code
 
+#    data_loader = get_loader(args.image_dir,  vocab, transform, args.batch_size, shuffle=True, num_workers=args.num_workers) 
 def make_dataset(dir):
     folders = []
-    counter = 0
     for root, dirs, files in os.walk(os.path.abspath(dir)):
         for file in files:
             if file.endswith(".txt"):
-                counter += 1
                 folders.append(root)
-    print(counter)
-    print(len(folders))
     return folders
+
+def validation_split(dataset, val_share=0.1):
+    val_offset = int(len(dataset)*(1-val_share))
+    return PartialDataset(dataset, 0, val_offset), PartialDataset(dataset, val_offset, len(dataset)-val_offset)
+class PartialDataset(torch.utils.data.Dataset):
+    def __init__(self, parent_ds, offset, length):
+        self.parent_ds = parent_ds
+        self.offset = offset
+        self.length = length
+        assert len(parent_ds)>=offset+length, Exception("Parent Dataset not long enough")
+        super(PartialDataset, self).__init__()
+    def __len__(self):
+        return self.length
+    def __getitem__(self, i):
+        return self.parent_ds[i+self.offset]
 
 class ProcessingDataset(data.Dataset):
     """Dataset compatible with torch.utils.data.DataLoader."""
-    def __init__(self, root,  vocab, transform=None):
+    def __init__(self, root,  vocab, transform=None,length=None):
         """Set the path for images, captions and vocabulary wrapper.
         
         Args:
             root: image directory.
-            json: coco annotation file path.
             vocab: vocabulary wrapper.
             transform: image transformer.
         """
@@ -47,8 +58,6 @@ class ProcessingDataset(data.Dataset):
             image = self.transform(image)
 
         # Convert caption (string) to word ids.
-        #TODO move this function into vocab builder
-        #tokens = re.findall(r"[^\W\d]+|\d+|[\W]", code)
         tokens = parse_code(code)
         code = []
         code.append(vocab('<start>'))
@@ -58,7 +67,6 @@ class ProcessingDataset(data.Dataset):
         return image, target
 
     def __len__(self):
-        #print(self.folders)
         return len(self.folders)
 
 

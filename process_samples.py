@@ -1,4 +1,6 @@
 import argparse,os,glob,re,json
+def calculate_accuracy():
+    pass
 def process(args):
     print(args)
     model_path = "./models/"+args.name
