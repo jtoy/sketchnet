@@ -95,22 +95,13 @@ def main(args):
             captions = to_var(captions)
             targets = pack_padded_sequence(captions, lengths, batch_first=True)[0]
             count = images.size()[0]
-            mini_ts = torch.FloatTensor(count,3,20,20)
-            for ii,image in enumerate(images): 
-                mini_ts[ii] = mini_transform(image)
-            mini_ts = to_var(mini_ts.view(count,-1),volatile=False)
-            #print(torch.cat(image_ts,new_mini_ts))
             
             # Forward, Backward and Optimize
             decoder.zero_grad()
             encoder.zero_grad()
             features = encoder(image_ts)
-            combined_features = torch.cat([features.data,mini_ts.data],1)
-            #print(combined_features.size())
-            outputs = decoder(to_var(combined_features), captions, lengths)
+            outputs = decoder(features, captions, lengths)
 
-            print(targets.size())
-            print(outputs.size())
             loss = criterion(outputs, targets)
             cc_server.add_scalar_value("train_loss", loss.data[0])
             cc_server.add_scalar_value("perplexity", np.exp(loss.data[0]))
@@ -133,23 +124,20 @@ def main(args):
                                         'encoder-%d-%d.pkl' %(epoch+1, i+1)))
             if i%int(train_size/10) == 0:
                 encoder.eval()
-                decoder.eval()
+                #decoder.eval()
                 correct = 0
                 for ti, (timages, tcaptions, tlengths) in enumerate(test_loader):
                     timage_ts = to_var(timages, volatile=True)
                     tcaptions = to_var(tcaptions)
                     ttargets = pack_padded_sequence(tcaptions, tlengths, batch_first=True)[0]
-                    tcount = timages.size()[0]
-                    tmini_ts = torch.FloatTensor(tcount,3,20,20)
-                    for tii,timage in enumerate(timages): 
-                        tmini_ts[tii] = mini_transform(timage)
-                    tmini_ts = to_var(tmini_ts.view(count,-1),volatile=False)
                     tfeatures = encoder(timage_ts)
-                    tcombined_features = torch.cat([tfeatures.data,tmini_ts.data],1)
-                    toutputs = decoder(to_var(tcombined_features), tcaptions, tlengths)
+                    toutputs = decoder(tfeatures, tcaptions, tlengths)
                     print(ttargets)
                     print(toutputs)
-                    correct = (ttargets == toutputs).sum()
+                    print(ttargets.size())
+                    print(toutputs.size())
+                    #correct = (ttargets.eq(toutputs[0].long())).sum()
+
                     
                 accuracy = 100 * correct / test_size
                 print('accuracy: %.4f' %(accuracy)) 
