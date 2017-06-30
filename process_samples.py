@@ -1,11 +1,10 @@
 import argparse,os,glob,re,json
-def calculate_accuracy():
-    pass
 def process(args):
     print(args)
     model_path = "./models/"+args.name
     out_path = "./output/"+args.name
     os.system("mkdir -p "+ out_path)
+    print(model_path)
     if args.decoder is None:
         decoder = max(glob.iglob(os.path.join(model_path,'decoder*')), key=os.path.getctime)
     else:

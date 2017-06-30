@@ -1,9 +1,8 @@
 import torch
 import matplotlib.pyplot as plt
 import numpy as np 
-import argparse
-import pickle 
-import os
+import argparse,pickle,os
+from utils import *
 from torch.autograd import Variable 
 from torchvision import transforms 
 from build_vocab import Vocabulary
@@ -35,8 +34,7 @@ def main(args):
     # Build Models
     encoder = EncoderCNN(args.embed_size)
     encoder.eval()  # evaluation mode (BN uses moving mean/variance)
-    decoder = DecoderRNN(args.embed_size, args.hidden_size, 
-                         len(vocab), args.num_layers)
+    decoder = DecoderRNN(args.embed_size, args.hidden_size, len(vocab), args.num_layers)
     
 
     # Load the trained model parameters
@@ -51,12 +49,10 @@ def main(args):
     if torch.cuda.is_available():
         encoder.cuda()
         decoder.cuda()
-        state = [s.cuda() for s in state]
         image_tensor = image_tensor.cuda()
-    
     # Generate caption from image
     feature = encoder(image_tensor)
-    sampled_ids = decoder.sample(feature, state,args.length)
+    sampled_ids = decoder.sample(feature, args.length)
     sampled_ids = sampled_ids.cpu().data.numpy()
     
     # Decode word_ids to words
@@ -70,7 +66,7 @@ def main(args):
     sentence = ''.join(sampled_caption)
     
     # Print out image and generated caption.
-    print (sentence)
+    print(sentence)
     #TODO only call plt if we know we are in xwindows
     #plt.imshow(np.asarray(image))
     

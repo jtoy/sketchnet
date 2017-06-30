@@ -70,7 +70,7 @@ def main(args):
     # Build the models
     encoder = EncoderCNN(args.embed_size)
     print(encoder)
-    decoder = DecoderRNN(args.embed_size+1200, args.hidden_size, len(vocab), args.num_layers)
+    decoder = DecoderRNN(args.embed_size, args.hidden_size, len(vocab), args.num_layers)
     print(decoder)
     if torch.cuda.is_available():
         encoder.cuda()
@@ -85,9 +85,9 @@ def main(args):
     add_log_entry(args.name,start_time,vars(args))
     
     # Train the Models
-    total_step = len(train_loader)
+    total_step = len(data_loader)
     for epoch in range(args.num_epochs):
-        for i, (images, captions, lengths) in enumerate(train_loader):
+        for i, (images, captions, lengths) in enumerate(data_loader):
             decoder.train()
             encoder.train()
             # Set mini-batch dataset
@@ -103,10 +103,11 @@ def main(args):
             outputs = decoder(features, captions, lengths)
 
             loss = criterion(outputs, targets)
-            cc_server.add_scalar_value("train_loss", loss.data[0])
-            cc_server.add_scalar_value("perplexity", np.exp(loss.data[0]))
             loss.backward()
             optimizer.step()
+
+            cc_server.add_scalar_value("train_loss", loss.data[0])
+            cc_server.add_scalar_value("perplexity", np.exp(loss.data[0]))
 
             # Print log info
             if i % args.log_step == 0:
@@ -122,7 +123,7 @@ def main(args):
                 torch.save(encoder.state_dict(), 
                            os.path.join(full_model_path, 
                                         'encoder-%d-%d.pkl' %(epoch+1, i+1)))
-            if i%int(train_size/10) == 0:
+            if 1 ==2 and i%int(train_size/10) == 0:
                 encoder.eval()
                 #decoder.eval()
                 correct = 0
