@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
-import torchvision.models as models
+#import torchvision.models as models
+from resnet import *
 from torch.nn.utils.rnn import pack_padded_sequence
 from torch.autograd import Variable
 from torchvision import transforms
@@ -14,8 +15,8 @@ class EncoderCNN(nn.Module):
     def __init__(self, embed_size):
         """Load the pretrained ResNet-152 and replace top fc layer."""
         super(EncoderCNN, self).__init__()
-        #net = models.resnet152(pretrained=False)
-        net = models.resnet152(pretrained=True)
+        #net = resnet152(pretrained=False)
+        net = resnet152(pretrained=True)
         modules = list(net.children())[:-1]      # delete the last fc layer.
         self.net = nn.Sequential(*modules)
         self.linear = nn.Linear(net.fc.in_features,embed_size)

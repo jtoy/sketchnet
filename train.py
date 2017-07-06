@@ -19,14 +19,15 @@ def to_var(x,volatile=False):
 def main(args):
 
     #setup tensorboard
-    cc = CrayonClient(hostname="localhost")
+    #cc = CrayonClient(hostname="localhost")
     #print(cc.get_experiment_names())
     #if args.name in cc.get_experiment_names():
     try:
-        cc.remove_experiment(args.name)
+        #cc.remove_experiment(args.name)
+        pass
     except:
         print("experiment didnt exist")
-    cc_server = cc.create_experiment(args.name)
+    #cc_server = cc.create_experiment(args.name)
 
     # Create model directory
     full_model_path = args.model_path+ "/" +args.name
@@ -106,8 +107,8 @@ def main(args):
             loss.backward()
             optimizer.step()
 
-            cc_server.add_scalar_value("train_loss", loss.data[0])
-            cc_server.add_scalar_value("perplexity", np.exp(loss.data[0]))
+            #cc_server.add_scalar_value("train_loss", loss.data[0])
+            #cc_server.add_scalar_value("perplexity", np.exp(loss.data[0]))
 
             # Print log info
             if i % args.log_step == 0:

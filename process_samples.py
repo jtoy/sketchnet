@@ -48,7 +48,8 @@ def process(args):
             op =  os.path.abspath(os.path.join(out_path,str(number)+".jpg"))
             #99% the last line will be incomplete 
             os.system("head -n-1 "+ fp +" > " + cp)
-            c = "xvfb-run -a jruby ../processing_data_generator/generator/scaling_output.rb " + cp + " " + op
+            c = "xvfb-run -a jruby ../processing_data_generator/generator/output.rb " + cp + " " + op
+            #c = "xvfb-run -a jruby ../processing_data_generator/generator/scaling_output.rb " + cp + " " + op
             print(c)
             os.system(c)
           else:
