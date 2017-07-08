@@ -2,3 +2,5 @@ matplotlib
 numpy
 Pillow
 argparse
+Jinja2
+boto

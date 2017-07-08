@@ -1,4 +1,13 @@
 import argparse,os,glob,re,json
+from boto.s3.connection import S3Connection
+from boto.s3.key import Key
+from jinja2 import Environment, FileSystemLoader
+def entries_to_remove(entries, the_dict):
+    new_dict = the_dict.copy()
+    for key in entries:
+        if key in new_dict:
+            del new_dict[key]
+    return new_dict
 def process(args):
     print(args)
     model_path = "./models/"+args.name
@@ -28,6 +37,7 @@ def process(args):
     else:
        hidden_size = str(args.hidden_size)
     any_fails = False
+    results = []
     for root, dirs, files in os.walk(os.path.abspath(args.images)):
       for file in files:
         if any_fails == False and (file.endswith(".jpg") or file.endswith(".png")):
@@ -39,13 +49,18 @@ def process(args):
           r = os.system(c)
           print(r)
           print("code:")
+          result = {}
           with open(code_path, 'r') as fin:
             print(fin.read())
+          result['input'] = image_path
           if r == 0:
             #if file is not empty
             fp =  os.path.abspath(os.path.join(out_path,str(number)+"_code.txt"))
             cp =  os.path.abspath("output/"+str(number)+"_cleaned.txt")
             op =  os.path.abspath(os.path.join(out_path,str(number)+".jpg"))
+            result['code'] = fp
+            result['cleaned_code'] = cp
+            result['output'] = op
             #99% the last line will be incomplete 
             os.system("head -n-1 "+ fp +" > " + cp)
             c = "xvfb-run -a jruby ../processing_data_generator/generator/output.rb " + cp + " " + op
@@ -55,9 +70,40 @@ def process(args):
           else:
             pass
             #any_fails = True
+          results.append(result)
 
-    #r = os.system("tar -cvf output.tar output && curl --upload-file ./output.tar https://transfer.sh/output.tar")
-    #print(r)
+    if args.s3:
+        #TODO check if keys are null
+        s3conn = S3Connection(os.environ.get('AWS_ACCESS_KEY_ID'), os.environ.get('AWS_SECRET_ACCESS_KEY'))
+        bucket = s3conn.get_bucket('sketchnet')
+        path = 'experiments/'+args.name+'/'
+        for result in results:
+            for key in ['input','output']:
+                k = Key(bucket)
+                k.key=path+key+os.path.basename(result[key])
+                k.set_contents_from_filename(result[key], reduced_redundancy=True)
+          
+        env = Environment(loader=FileSystemLoader("./"))
+        template = env.get_template('results.html')
+        cleaned_params = entries_to_remove(['name','images','s3','transfer'], vars(args)) 
+        cleaned_results = []
+        for result in results:
+            r = {}
+            r['input']='input'+os.path.basename(result['input'])
+            r['output']='output'+os.path.basename(result['output'])
+            with open(result['code'], 'r') as f:
+                r['code']=f.read()
+            with open(result['cleaned_code'], 'r') as f:
+                r['cleaned_code']=f.read()
+            cleaned_results.append(r)
+        rendered_template = template.render(experiment=args.name, parameters=cleaned_params,results=cleaned_results)
+        k = Key(bucket)
+        k.content_type = 'text/html'
+        k.key=path+'index.html'
+        k.set_contents_from_string(rendered_template, reduced_redundancy=True)
+    if args.transfer: 
+        r = os.system("tar -cvf output.tar output && curl --upload-file ./output.tar https://transfer.sh/output.tar")
+        print(r)
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--images', type=str, default="./test_images" , help='path to images')
@@ -70,5 +116,7 @@ if __name__ == '__main__':
     parser.add_argument('--hidden_size', type=int , default=512, help='dimension of lstm hidden states')
     parser.add_argument('--num_layers', type=int , default=1 , help='number of layers in lstm')
     parser.add_argument('--length', type=int, default=200, help='length of output')
+    parser.add_argument('--s3', action='store_false', help='save results to s3 bucket')
+    parser.add_argument('--transfer', action='store_true', help='use transfer.sh to upload')
     args = parser.parse_args()
     process(args)

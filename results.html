@@ -1,0 +1,14 @@
+<h1>Experiment {% block experiment %}{% endblock %}</h1>
+<div>parameters {% block parameters %}{% endblock %}</div>
+<div>
+  {% for result in results %}
+    <div>
+      input image:<image height="256" width="256" src="{{ result['input'] }}">
+      output image:<image src="{{ result['output'] }}">
+      <br>generated code:<br>
+      <pre>{{ result['code'] }}</pre>
+      <br>generated cleaned code:<br>
+      <pre>{{ result['cleaned_code'] }}</pre>
+    </div>
+  {% endfor %}
+</div>

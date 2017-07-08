@@ -19,15 +19,15 @@ def to_var(x,volatile=False):
 def main(args):
 
     #setup tensorboard
-    #cc = CrayonClient(hostname="localhost")
-    #print(cc.get_experiment_names())
+    if args.tensorboard:
+        cc = CrayonClient(hostname="localhost")
+        print(cc.get_experiment_names())
     #if args.name in cc.get_experiment_names():
-    try:
-        #cc.remove_experiment(args.name)
-        pass
-    except:
-        print("experiment didnt exist")
-    #cc_server = cc.create_experiment(args.name)
+        try:
+            cc.remove_experiment(args.name)
+        except:
+            print("experiment didnt exist")
+        cc_server = cc.create_experiment(args.name)
 
     # Create model directory
     full_model_path = args.model_path+ "/" +args.name
@@ -107,8 +107,9 @@ def main(args):
             loss.backward()
             optimizer.step()
 
-            #cc_server.add_scalar_value("train_loss", loss.data[0])
-            #cc_server.add_scalar_value("perplexity", np.exp(loss.data[0]))
+            if args.tensorboard:
+                cc_server.add_scalar_value("train_loss", loss.data[0])
+                cc_server.add_scalar_value("perplexity", np.exp(loss.data[0]))
 
             # Print log info
             if i % args.log_step == 0:
@@ -143,7 +144,8 @@ def main(args):
                     
                 accuracy = 100 * correct / test_size
                 print('accuracy: %.4f' %(accuracy)) 
-                cc_server.add_scalar_value("accuracy", accuracy)
+                if args.tensorboard:
+                    cc_server.add_scalar_value("accuracy", accuracy)
                            
     torch.save(decoder.state_dict(), os.path.join(full_model_path, 'decoder-%d-%d.pkl' %(epoch+1, i+1)))
     torch.save(encoder.state_dict(), os.path.join(full_model_path, 'encoder-%d-%d.pkl' %(epoch+1, i+1)))
@@ -179,6 +181,7 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', type=int, default=128)
     parser.add_argument('--num_workers', type=int, default=2)
     parser.add_argument('--learning_rate', type=float, default=0.001)
+    parser.add_argument('--tensorboard', type=str)
     args = parser.parse_args()
     print(args)
     main(args)
