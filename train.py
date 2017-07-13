@@ -37,7 +37,6 @@ def main(args):
         f.write((json.dumps(vars(args))))
 
     # Image preprocessing
-    # For normalization, see https://github.com/pytorch/vision#models
 
     transform = transforms.Compose([ 
         transforms.Scale(args.crop_size),
@@ -69,7 +68,7 @@ def main(args):
     test_size = len(test_loader)
 
     # Build the models
-    encoder = EncoderCNN(args.embed_size)
+    encoder = EncoderCNN(args.embed_size,args.train_cnn)
     print(encoder)
     decoder = DecoderRNN(args.embed_size, args.hidden_size, len(vocab), args.num_layers)
     print(decoder)
@@ -182,6 +181,7 @@ if __name__ == '__main__':
     parser.add_argument('--num_workers', type=int, default=2)
     parser.add_argument('--learning_rate', type=float, default=0.001)
     parser.add_argument('--tensorboard', type=str)
+    parser.add_argument('--train_cnn', action="store_false")
     args = parser.parse_args()
     print(args)
     main(args)

@@ -12,11 +12,12 @@ mini_transform = transforms.Compose([
     transforms.Scale(20),
     transforms.ToTensor() ])
 class EncoderCNN(nn.Module):
-    def __init__(self, embed_size):
+    def __init__(self, embed_size,pretrained=True):
         """Load the pretrained ResNet-152 and replace top fc layer."""
         super(EncoderCNN, self).__init__()
         #net = resnet152(pretrained=False)
-        net = resnet152(pretrained=True)
+        print("pretrained is "+str(pretrained))
+        net = resnet152(pretrained)
         modules = list(net.children())[:-1]      # delete the last fc layer.
         self.net = nn.Sequential(*modules)
         self.linear = nn.Linear(net.fc.in_features,embed_size)
