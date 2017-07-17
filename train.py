@@ -70,14 +70,16 @@ def main(args):
     # Build the models
     encoder = EncoderCNN(args.embed_size,args.train_cnn)
     print(encoder)
-    decoder = DecoderRNN(args.embed_size, args.hidden_size, len(vocab), args.num_layers)
+    decoder = DecoderRNN(args.embed_size, args.hidden_size, len(vocab), args.num_layers,vocab)
+    decoder = decoder
     print(decoder)
     if torch.cuda.is_available():
         encoder.cuda()
         decoder.cuda()
 
     # Loss and Optimizer
-    criterion = nn.CrossEntropyLoss()
+    #criterion = nn.CrossEntropyLoss()
+    criterion = nn.MSELoss()
     params = list(decoder.parameters()) + list(encoder.linear.parameters()) + list(encoder.bn.parameters())
     #params = list(decoder.parameters()) #+ list(encoder.linear.parameters()) + list(encoder.bn.parameters())
     optimizer = torch.optim.Adam(params, lr=args.learning_rate)
@@ -91,9 +93,14 @@ def main(args):
             decoder.train()
             encoder.train()
             # Set mini-batch dataset
-            image_ts = to_var(images, volatile=True)
+            #image_ts = to_var(images, volatile=True)
+            image_ts = to_var(images)
+            print("captoins lenrgth:"+str(captions.size()))
             captions = to_var(captions)
             targets = pack_padded_sequence(captions, lengths, batch_first=True)[0]
+            print("padded captions lenrgth:"+str(targets.size()))
+            print("image_ts type:"+str(type(image_ts.data)))
+            print("caption tye:"+str(type(captions)))
             count = images.size()[0]
             
             # Forward, Backward and Optimize
@@ -101,14 +108,15 @@ def main(args):
             encoder.zero_grad()
             features = encoder(image_ts)
             outputs = decoder(features, captions, lengths)
+            print("image size:" +str(images.size()))
+            print("targets size:" +str(targets.size()))
 
-            loss = criterion(outputs, targets)
+            #loss = criterion(outputs, targets)
+            loss = criterion(outputs, image_ts)
             loss.backward()
             optimizer.step()
 
             total = targets.size(0)
-            max_index = outputs.max(dim = 1)[1]
-            #correct = (max_index == targets).sum()
             _, predicted = torch.max(outputs.data, 1)
             correct = predicted.eq(targets.data).cpu().sum()
             accuracy = 100.*correct/total

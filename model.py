@@ -3,7 +3,7 @@ import torch.nn as nn
 #import torchvision.models as models
 from resnet import *
 from vgg import *
-from torch.nn.utils.rnn import pack_padded_sequence
+from torch.nn.utils.rnn import pack_padded_sequence,pad_packed_sequence
 from torch.autograd import Variable
 from torchvision import transforms
 from utils import to_var
@@ -53,14 +53,30 @@ class ImagineLayer(nn.Module):
     def forward(self,x):
         return x
 
+class ImageLayer(nn.Module):
+    def __init__(self,size):
+        super(ImageLayer, self).__init__()
+        self.linear = nn.Linear(size  ,4800)
+        self.init_weights()
+    def init_weights(self):
+        """Initialize the weights."""
+        self.linear.weight.data.normal_(0.0, 0.02)
+        self.linear.bias.data.fill_(0)
+    def forward(self,x):
+        x = self.linear(x)
+        x = x.view(x.size(0),3,40,40)
+        print("new size"+ str(x.size()))
+        return x
+
 class DecoderRNN(nn.Module):
-    def __init__(self, embed_size, hidden_size, vocab_size, num_layers):
+    def __init__(self, embed_size, hidden_size, vocab_size, num_layers,vocab):
         """Set the hyper-parameters and build the layers."""
         super(DecoderRNN, self).__init__()
         self.embed = nn.Embedding(vocab_size, embed_size)
         self.lstm = nn.LSTM(embed_size, hidden_size, num_layers, batch_first=True)
         self.linear = nn.Linear(hidden_size, vocab_size)
-        self.imagine = ImagineLayer()
+        self.image_layer = nn.Linear(vocab_size,4800)
+        self.vocab = vocab
         self.init_weights()
     
     def init_weights(self):
@@ -68,6 +84,8 @@ class DecoderRNN(nn.Module):
         self.embed.weight.data.uniform_(-0.1, 0.1)
         self.linear.weight.data.uniform_(-0.1, 0.1)
         self.linear.bias.data.fill_(0)
+        self.image_layer.weight.data.uniform_(-0.1, 0.1)
+        self.image_layer.bias.data.fill_(0)
         
     def forward(self, features, captions, lengths):
         """Decode image feature vectors and generates captions."""
@@ -78,8 +96,18 @@ class DecoderRNN(nn.Module):
         embeddings = torch.cat((features.unsqueeze(1), embeddings), 1)
         packed = pack_padded_sequence(embeddings, lengths, batch_first=True) 
         hiddens, _ = self.lstm(packed)
+        unpacked,unpacked_len = pad_packed_sequence(hiddens)
         outputs = self.linear(hiddens[0])
-        #outputs = self.imagine(outputs)
+        print("unpacked size"+str(unpacked.size()))
+        print("unpacked len"+str(unpacked_len))
+        print("hiddens:"+str(hiddens[0].size()))
+        print("outputs"+str(outputs.size()))
+        #predicted =outputs.max(1)[1]
+        print("before output rnn type"+str(type(outputs.data)))
+        outputs = self.image_layer(outputs)
+        outputs = outputs.view(outputs.size(0),3,40,40)
+        print("output rnn type"+str(type(outputs.data)))
+        #outputs = outputs.long()
         return outputs
     
     def sample(self, features,length=20, states=None):

@@ -11,31 +11,31 @@ from PIL import Image
 
 
 def load_image(image_path, transform=None):
-    image = Image.open(image_path)
+  image = Image.open(image_path)
     image = image.resize([224, 224], Image.LANCZOS)
 
     if transform is not None:
-        image = transform(image).unsqueeze(0)
+      image = transform(image).unsqueeze(0)
 
     return image
 
 def main(args):
-    # Image preprocessing
+  # Image preprocessing
     transform = transforms.Compose([ 
-        transforms.Scale(args.crop_size),  
-        #transforms.CenterCrop(args.crop_size),
-        transforms.ToTensor(), 
-        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)) ])
-    
+      transforms.Scale(args.crop_size),  
+      #transforms.CenterCrop(args.crop_size),
+      transforms.ToTensor(), 
+      transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)) ])
+
     # Load vocabulary wrapper
     with open(args.vocab_path, 'rb') as f:
-        vocab = pickle.load(f)
+      vocab = pickle.load(f)
 
     # Build Models
     encoder = EncoderCNN(args.embed_size)
     encoder.eval()  # evaluation mode (BN uses moving mean/variance)
-    decoder = DecoderRNN(args.embed_size, args.hidden_size, len(vocab), args.num_layers)
-    
+    decoder = DecoderRNN(args.embed_size, args.hidden_size, len(vocab), args.num_layers,vocab)
+
 
     # Load the trained model parameters
     encoder.load_state_dict(torch.load(args.encoder_path))
@@ -44,42 +44,42 @@ def main(args):
     # Prepare Image       
     image = load_image(args.image,transform)
     image_tensor = to_var(image,volatile=True)
-    
+
     # If use gpu
     if torch.cuda.is_available():
-        encoder.cuda()
+      encoder.cuda()
         decoder.cuda()
         image_tensor = image_tensor.cuda()
     # Generate caption from image
     feature = encoder(image_tensor)
     sampled_ids = decoder.sample(feature, args.length)
     sampled_ids = sampled_ids.cpu().data.numpy()
-    
+
     # Decode word_ids to words
     sampled_caption = []
     for word_id in sampled_ids:
-        word = vocab.idx2word[word_id]
+      word = vocab.idx2word[word_id]
         if word != '<start>' and word != '<end>':
-            sampled_caption.append(word)
+          sampled_caption.append(word)
         if word == '<end>':
-            break
+          break
     sentence = ''.join(sampled_caption)
-    
+
     # Print out image and generated caption.
     print(sentence)
     #TODO only call plt if we know we are in xwindows
     #plt.imshow(np.asarray(image))
-    
+
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
+  parser = argparse.ArgumentParser()
     parser.add_argument('--image', type=str, required=True,
-                        help='input image for generating caption')
+        help='input image for generating caption')
     parser.add_argument('--encoder_path', type=str, default='./models/encoder-5-3000.pkl',
-                        help='path for trained encoder')
+        help='path for trained encoder')
     parser.add_argument('--decoder_path', type=str, default='./models/decoder-5-3000.pkl',
-                        help='path for trained decoder')
+        help='path for trained decoder')
     parser.add_argument('--vocab_path', type=str, default='./data/vocab.pkl',
-                        help='path for vocabulary wrapper')
+        help='path for vocabulary wrapper')
     parser.add_argument('--crop_size', type=int, default=224,
                         help='size for center cropping images')
     
