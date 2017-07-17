@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 #import torchvision.models as models
 from resnet import *
+from vgg import *
 from torch.nn.utils.rnn import pack_padded_sequence
 from torch.autograd import Variable
 from torchvision import transforms
@@ -17,7 +18,8 @@ class EncoderCNN(nn.Module):
         super(EncoderCNN, self).__init__()
         #net = resnet152(pretrained=False)
         print("pretrained is "+str(pretrained))
-        net = resnet152(pretrained)
+        #net = resnet152(pretrained)
+        net = VGG('VGG16')
         modules = list(net.children())[:-1]      # delete the last fc layer.
         self.net = nn.Sequential(*modules)
         self.linear = nn.Linear(net.fc.in_features,embed_size)
@@ -44,7 +46,13 @@ class EncoderCNN(nn.Module):
         #mini_ts = mini_ts.view(count,-1)
         #return to_var(torch.cat([features.data,mini_ts.data],1),volatile=False)
     
-    
+   
+class ImagineLayer(nn.Module):
+    def __init__(self):
+        super(ImagineLayer, self).__init__()
+    def forward(self,x):
+        return x
+
 class DecoderRNN(nn.Module):
     def __init__(self, embed_size, hidden_size, vocab_size, num_layers):
         """Set the hyper-parameters and build the layers."""
@@ -52,6 +60,7 @@ class DecoderRNN(nn.Module):
         self.embed = nn.Embedding(vocab_size, embed_size)
         self.lstm = nn.LSTM(embed_size, hidden_size, num_layers, batch_first=True)
         self.linear = nn.Linear(hidden_size, vocab_size)
+        self.imagine = ImagineLayer()
         self.init_weights()
     
     def init_weights(self):
@@ -70,6 +79,7 @@ class DecoderRNN(nn.Module):
         packed = pack_padded_sequence(embeddings, lengths, batch_first=True) 
         hiddens, _ = self.lstm(packed)
         outputs = self.linear(hiddens[0])
+        #outputs = self.imagine(outputs)
         return outputs
     
     def sample(self, features,length=20, states=None):

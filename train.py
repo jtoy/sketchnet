@@ -106,15 +106,23 @@ def main(args):
             loss.backward()
             optimizer.step()
 
+            total = targets.size(0)
+            max_index = outputs.max(dim = 1)[1]
+            #correct = (max_index == targets).sum()
+            _, predicted = torch.max(outputs.data, 1)
+            correct = predicted.eq(targets.data).cpu().sum()
+            accuracy = 100.*correct/total
+
             if args.tensorboard:
                 cc_server.add_scalar_value("train_loss", loss.data[0])
                 cc_server.add_scalar_value("perplexity", np.exp(loss.data[0]))
+                cc_server.add_scalar_value("accuracy", accuracy)
 
             # Print log info
             if i % args.log_step == 0:
-                print('Epoch [%d/%d], Step [%d/%d], Loss: %.4f, Perplexity: %5.4f'
+                print('Epoch [%d/%d], Step [%d/%d], Loss: %.4f, accuracy: %2.2f Perplexity: %5.4f'
                       %(epoch, args.num_epochs, i, total_step, 
-                        loss.data[0], np.exp(loss.data[0]))) 
+                        loss.data[0], accuracy, np.exp(loss.data[0]))) 
                 
             # Save the models
             if (i+1) % args.save_step == 0:
