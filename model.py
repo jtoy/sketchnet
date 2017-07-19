@@ -95,8 +95,9 @@ class DecoderRNN(nn.Module):
         #print(features.unsqueeze(1).size())
         embeddings = torch.cat((features.unsqueeze(1), embeddings), 1)
         packed = pack_padded_sequence(embeddings, lengths, batch_first=True) 
-        hiddens, _ = self.lstm(packed)
-        unpacked,unpacked_len = pad_packed_sequence(hiddens)
+        #hiddens, _ = self.lstm(packed)
+        hiddens, _ = self.lstm(embeddings)
+        #unpacked,unpacked_len = pad_packed_sequence(hiddens)
         outputs = self.linear(hiddens[0])
         print("unpacked size"+str(unpacked.size()))
         print("unpacked len"+str(unpacked_len))
@@ -105,8 +106,8 @@ class DecoderRNN(nn.Module):
         #predicted =outputs.max(1)[1]
         print("before output rnn type"+str(type(outputs.data)))
         outputs = self.image_layer(outputs)
-        outputs = outputs.view(outputs.size(0),3,40,40)
         print("output rnn type"+str(type(outputs.data)))
+        outputs = outputs.view(outputs.size(0),3,40,40)
         #outputs = outputs.long()
         return outputs
     
