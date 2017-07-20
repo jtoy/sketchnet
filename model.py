@@ -101,7 +101,7 @@ class DecoderRNN(nn.Module):
         #outputs = self.linear(rnn_features[0])
         #print("unpacked size"+str(unpacked.size()))
         #print("unpacked len"+str(unpacked_len))
-        print("rnn_features:"+str(rnn_features.size()))
+        print("rnn_features:"+str(rnn_features.data.size()))
         print("outputs"+str(outputs.size()))
         #predicted =outputs.max(1)[1]
         print("before output rnn type"+str(type(outputs.data)))
