@@ -95,6 +95,7 @@ class DecoderRNN(nn.Module):
         #print(features.unsqueeze(1).size())
         embeddings = torch.cat((features.unsqueeze(1), embeddings), 1)
         packed = pack_padded_sequence(embeddings, lengths, batch_first=True) 
+        print("packed size"+str(packed.data.size())
         rnn_features, _ = self.lstm(packed)
         #features, _ = self.lstm(embeddings)
         #unpacked,unpacked_len = pad_packed_sequence(hiddens)
