@@ -84,8 +84,8 @@ class DecoderRNN(nn.Module):
         self.embed.weight.data.uniform_(-0.1, 0.1)
         self.linear.weight.data.uniform_(-0.1, 0.1)
         self.linear.bias.data.fill_(0)
-        self.image_layer.weight.data.uniform_(-0.1, 0.1)
-        self.image_layer.bias.data.fill_(0)
+        self.classifier.weight.data.uniform_(-0.1, 0.1)
+        self.classifier.bias.data.fill_(0)
         
     def forward(self, features, captions, lengths):
         """Decode image feature vectors and generates captions."""
