@@ -75,6 +75,7 @@ class DecoderRNN(nn.Module):
         self.embed = nn.Embedding(vocab_size, embed_size)
         self.lstm = nn.LSTM(embed_size, hidden_size, num_layers, batch_first=True)
         self.linear = nn.Linear(hidden_size, vocab_size)
+        self.hidden_size = hidden_size
         self.classifier = nn.Linear(hidden_size,4800)
         self.vocab = vocab
         self.init_weights()
@@ -91,20 +92,20 @@ class DecoderRNN(nn.Module):
         """Decode image feature vectors and generates captions."""
         embeddings = self.embed(captions)
         #print("forward sizes")
-        print("embedding size:"+str(embeddings.size()))
         #print(features.unsqueeze(1).size())
         embeddings = torch.cat((features.unsqueeze(1), embeddings), 1)
         packed = pack_padded_sequence(embeddings, lengths, batch_first=True) 
-        print("packed size"+str(packed.data.size()))
+        #print("packed size"+str(packed.data.size()))
         rnn_features, (hidden,_) = self.lstm(packed)
         #features, _ = self.lstm(embeddings)
         #unpacked,unpacked_len = pad_packed_sequence(hiddens)
         #outputs = self.linear(rnn_features[0])
-        #print("unpacked size"+str(unpacked.size()))
-        #print("unpacked len"+str(unpacked_len))
-        print("rnn_features:"+str(rnn_features.data.size()))
-        print("hidden:"+str(hidden.size()))
-        outputs = self.classifier(rnn_features[0])
+        #print("rnn_features:"+str(rnn_features.data.size()))
+        #print("hidden:"+str(hidden.size()))
+        #newh = hidden.view(hidden.size()[1], self.hidden_size)
+        #newh = hidden.view(-1, self.hidden_size)
+        #print("newh:"+str(newh.size()))
+        outputs = self.classifier(hidden[0])
         outputs = outputs.view(outputs.size(0),3,40,40)
         return outputs
     

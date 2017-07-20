@@ -95,12 +95,10 @@ def main(args):
             # Set mini-batch dataset
             #image_ts = to_var(images, volatile=True)
             image_ts = to_var(images)
-            print("captoins lenrgth:"+str(captions.size()))
+            #print("captoins lenrgth:"+str(captions.size()))
             captions = to_var(captions)
             targets = pack_padded_sequence(captions, lengths, batch_first=True)[0]
-            print("padded captions lenrgth:"+str(targets.size()))
-            print("image_ts type:"+str(type(image_ts.data)))
-            print("caption tye:"+str(type(captions)))
+            #print("padded captions lenrgth:"+str(targets.size()))
             count = images.size()[0]
             
             # Forward, Backward and Optimize
@@ -108,8 +106,8 @@ def main(args):
             encoder.zero_grad()
             features = encoder(image_ts)
             outputs = decoder(features, captions, lengths)
-            print("image size:" +str(images.size()))
-            print("targets size:" +str(targets.size()))
+            #print("image size:" +str(images.size()))
+            #print("targets size:" +str(targets.size()))
 
             #loss = criterion(outputs, targets)
             loss = criterion(outputs, image_ts)
@@ -118,13 +116,14 @@ def main(args):
 
             total = targets.size(0)
             _, predicted = torch.max(outputs.data, 1)
-            correct = predicted.eq(targets.data).cpu().sum()
-            accuracy = 100.*correct/total
+            #correct = predicted.eq(targets.data).cpu().sum()
+            #accuracy = 100.*correct/total
+            accuracy =0.0
 
             if args.tensorboard:
                 cc_server.add_scalar_value("train_loss", loss.data[0])
                 cc_server.add_scalar_value("perplexity", np.exp(loss.data[0]))
-                cc_server.add_scalar_value("accuracy", accuracy)
+                #cc_server.add_scalar_value("accuracy", accuracy)
 
             # Print log info
             if i % args.log_step == 0:
