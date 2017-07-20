@@ -102,9 +102,7 @@ class DecoderRNN(nn.Module):
         #print("unpacked size"+str(unpacked.size()))
         #print("unpacked len"+str(unpacked_len))
         print("rnn_features:"+str(rnn_features.data.size()))
-        print("outputs"+str(outputs.size()))
         #predicted =outputs.max(1)[1]
-        print("before output rnn type"+str(type(outputs.data)))
         outputs = self.image_layer(rnn_features[0])
         print("output rnn type"+str(type(outputs.data)))
         outputs = outputs.view(outputs.size(0),3,40,40)
