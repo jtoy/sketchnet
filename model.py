@@ -102,11 +102,8 @@ class DecoderRNN(nn.Module):
         #print("unpacked size"+str(unpacked.size()))
         #print("unpacked len"+str(unpacked_len))
         print("rnn_features:"+str(rnn_features.data.size()))
-        #predicted =outputs.max(1)[1]
         outputs = self.classifier(rnn_features[0])
-        print("output rnn type"+str(type(outputs.data)))
         outputs = outputs.view(outputs.size(0),3,40,40)
-        #outputs = outputs.long()
         return outputs
     
     def sample(self, features,length=20, states=None):
