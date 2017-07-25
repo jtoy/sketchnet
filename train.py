@@ -153,27 +153,6 @@ def main(args):
                 torch.save(encoder.state_dict(), 
                            os.path.join(full_model_path, 
                                         'encoder-%d-%d.pkl' %(epoch+1, i+1)))
-            if 1 ==2 and i%int(train_size/10) == 0:
-                encoder.eval()
-                #decoder.eval()
-                correct = 0
-                for ti, (timages, tcaptions, tlengths) in enumerate(test_loader):
-                    timage_ts = to_var(timages, volatile=True)
-                    tcaptions = to_var(tcaptions)
-                    ttargets = pack_padded_sequence(tcaptions, tlengths, batch_first=True)[0]
-                    tfeatures = encoder(timage_ts)
-                    toutputs = decoder(tfeatures, tcaptions, tlengths)
-                    print(ttargets)
-                    print(toutputs)
-                    print(ttargets.size())
-                    print(toutputs.size())
-                    #correct = (ttargets.eq(toutputs[0].long())).sum()
-
-                    
-                accuracy = 100 * correct / test_size
-                print('accuracy: %.4f' %(accuracy)) 
-                if args.tensorboard:
-                    cc_server.add_scalar_value("accuracy", accuracy)
                            
     torch.save(decoder.state_dict(), os.path.join(full_model_path, 'decoder-%d-%d.pkl' %(epoch+1, i+1)))
     torch.save(encoder.state_dict(), os.path.join(full_model_path, 'encoder-%d-%d.pkl' %(epoch+1, i+1)))
