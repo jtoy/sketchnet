@@ -79,9 +79,9 @@ def main(args):
 
     # Loss and Optimizer
     #criterion = nn.CrossEntropyLoss()
-    criterion = nn.MSELoss()
-    params = list(decoder.parameters()) + list(encoder.linear.parameters()) + list(encoder.bn.parameters())
-    #params = list(decoder.parameters()) #+ list(encoder.linear.parameters()) + list(encoder.bn.parameters())
+    criterion = nn.SmoothL1Loss()
+    #params = list(decoder.parameters()) + list(encoder.linear.parameters()) + list(encoder.bn.parameters())
+    params = list(decoder.parameters()) #+ list(encoder.linear.parameters()) + list(encoder.bn.parameters())
     optimizer = torch.optim.Adam(params, lr=args.learning_rate)
     start_time = time.time()
     add_log_entry(args.name,start_time,vars(args))
@@ -105,7 +105,10 @@ def main(args):
             decoder.zero_grad()
             encoder.zero_grad()
             features = encoder(image_ts)
+            #print("image_ts size"+str(image_ts.size()))
+            #print("features size"+str(features.size()))
             outputs = decoder(features, captions, lengths)
+            #outputs = decoder(image_ts.view(image_ts.size()[0],-1), captions, lengths)
             #print("image size:" +str(images.size()))
             #print("targets size:" +str(targets.size()))
 
@@ -117,16 +120,27 @@ def main(args):
             total = targets.size(0)
             _, predicted = torch.max(outputs.data, 1)
             #correct = predicted.eq(targets.data).cpu().sum()
-            #accuracy = 100.*correct/total
-            accuracy =0.0
+            correct = outputs.data.eq(image_ts.data).sum()
+            accuracy = 100.*correct/total
+            #accuracy =0.0
 
             if args.tensorboard:
                 cc_server.add_scalar_value("train_loss", loss.data[0])
                 cc_server.add_scalar_value("perplexity", np.exp(loss.data[0]))
-                #cc_server.add_scalar_value("accuracy", accuracy)
+                cc_server.add_scalar_value("accuracy", accuracy)
 
             # Print log info
             if i % args.log_step == 0:
+                #print(i)
+                for ii,t in enumerate(outputs):
+                    result = transforms.ToPILImage()(t.data.cpu())
+                    result.save("./results/"+str(i)+"_"+str(ii)+".jpg")
+
+
+                #print("first output"+str(outputs[0]))
+                #print("target:"+str(image_ts[0]))
+                #print("diff:"+str(outputs[0]-image_ts[0]))
+                #print("diff sum:"+str((outputs-image_ts).sum()))
                 print('Epoch [%d/%d], Step [%d/%d], Loss: %.4f, accuracy: %2.2f Perplexity: %5.4f'
                       %(epoch, args.num_epochs, i, total_step, 
                         loss.data[0], accuracy, np.exp(loss.data[0]))) 
