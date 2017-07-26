@@ -139,7 +139,9 @@ class DecoderRNN(nn.Module):
         #newh = hidden.view(hidden.size()[1], self.hidden_size)
         #newh = hidden.view(-1, self.hidden_size)
         #print("newh:"+str(newh.size()))
-        outputs = self.relu(unpacked[0])
+        outputs = self.classifier(unpacked[0])
+        outputs = outputs.view(outputs.size(0),3,40,40)
+        return outputs
         outputs = self.selfclassifier(outputs)
         outputs = self.relu2(outputs)
         outputs = self.classifier(outputs)
