@@ -87,29 +87,8 @@ class DecoderRNN(nn.Module):
         self.linear = nn.Linear(hidden_size, vocab_size)
         self.hidden_size = hidden_size
         self.classifier = nn.Linear(hidden_size,4800)
+        #self.bn = nn.BatchNorm1d(4800, momentum=0.01)
         self.vocab = vocab
-        self.relu = nn.ReLU()
-        self.relu2 = nn.ReLU()
-        self.selfclassifier = nn.Linear(hidden_size,hidden_size)
-        self.convfc = nn.Linear(32*30*30,3*30*30)
-        z_dim = 3 #400 # 256
-        conv_dim = 64
-        image_size = 40
-        self.fc = deconv(z_dim, conv_dim*8, int(image_size/16), 1, 0, bn=False)
-        #self.fc = nn.ConvTranspose2d(z_dim,conv_dim*8,int(image_size/16),1,0)
-        self.deconv1 = deconv(conv_dim*8, conv_dim*4, 4)
-        #self.deconv2 = deconv(conv_dim*4, conv_dim*2, 4)
-        #self.deconv3 = deconv(conv_dim*2, conv_dim, 4)
-        self.deconv4 = deconv(conv_dim*4, 3, 4, bn=False)
-        upscale_factor = 3
-        self.to_image = nn.Linear(3*164*164,3*40*40)
-        #self.conv1 = nn.Conv2d(3,6,5)
-        #self.conv1 = nn.Conv2d(3, 64, (5, 5), (1, 1), (2, 2))
-        #self.conv2 = nn.Conv2d(64, 64, (3, 3), (1, 1), (1, 1))
-        #self.conv3 = nn.Conv2d(64, 32, (3, 3), (1, 1), (1, 1))
-        #self.conv4 = nn.Conv2d(32, upscale_factor ** 2, (3, 3), (1, 1), (1, 1))
-        #self.conv4 = nn.Conv2d(32, 3, (3, 3), (1, 1), (1, 1))
-        #self.pixel_shuffle = nn.PixelShuffle(upscale_factor)
         self.init_weights()
     
     def init_weights(self):
@@ -120,7 +99,7 @@ class DecoderRNN(nn.Module):
         self.classifier.weight.data.uniform_(-0.1, 0.1)
         self.classifier.bias.data.fill_(0)
         
-    def forward(self, features, captions, lengths):
+    def forward(self, captions, lengths):
         """Decode image feature vectors and generates captions."""
         embeddings = self.embed(captions)
         #print("features sizes"+str(features.size()))
@@ -131,46 +110,20 @@ class DecoderRNN(nn.Module):
         #print("packed size"+str(packed.data.size()))
         rnn_features, (hidden,_) = self.lstm(packed)
         #features, _ = self.lstm(embeddings)
+        #print("rnn_features:"+str(rnn_features.data.size()))
         unpacked,unpacked_len = pad_packed_sequence(rnn_features)
         #print("unpacked:"+str(unpacked.data.size()))
+        last = unpacked[-1, :, :]
+        #print("last:"+str(last.size()))
         #outputs = self.linear(rnn_features[0])
-        #print("rnn_features:"+str(rnn_features.data.size()))
         #print("hidden:"+str(hidden.size()))
         #newh = hidden.view(hidden.size()[1], self.hidden_size)
         #newh = hidden.view(-1, self.hidden_size)
         #print("newh:"+str(newh.size()))
-        outputs = self.classifier(unpacked[0])
+        outputs = self.classifier(last)
+        #outputs = self.bn(self.classifier(unpacked[0]))
         outputs = outputs.view(outputs.size(0),3,40,40)
         return outputs
-        outputs = self.selfclassifier(outputs)
-        outputs = self.relu2(outputs)
-        outputs = self.classifier(outputs)
-        #outputs = self.classifier(hidden[0])
-        x = outputs.view(outputs.size(0),3,40,40)
-
-
-
-        #x = self.relu(self.conv1(x))
-        #x = self.relu(self.conv2(x))
-        #x = self.relu(self.conv3(x))
-        #x = self.pixel_shuffle(self.conv4(x))
-        #print(x.size())
-#        x = self.relu(self.conv4(x))
-        #x = x.view(x.size(0),-1)
-        #print(x.size())
-        #x = self.convfc(x)
-        #x = outputs.view(x.size(0),3,40,40)
-        #return x
-        out = self.fc(x) 
-        out = F.leaky_relu(self.deconv1(out), 0.05)  # (?, 256, 8, 8)
-        #out = F.leaky_relu(self.deconv2(out), 0.05)  # (?, 128, 16, 16)
-        #out = F.leaky_relu(self.deconv3(out), 0.05)  # (?, 64, 32, 32)
-        out = F.tanh(self.deconv4(out)) 
-        #print(out.size())
-        out = self.to_image(out.view(out.size()[0],-1))
-        #print(out.size())
-        out = out.view(out.size(0),3,40,40)
-        return out
     
     def sample(self, features,length=20, states=None):
         """Samples captions for given image features (Greedy search)."""

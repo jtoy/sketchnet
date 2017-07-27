@@ -53,7 +53,7 @@ class ProcessingDataset(data.Dataset):
         vocab = self.vocab
         with open(os.path.join(path,"code.txt"), 'r') as f:
             code = str(f.read())
-        image = Image.open(os.path.join(path, "image.jpg")).convert('RGB')
+        image = Image.open(os.path.join(path, "image.tiff")).convert('RGB')
         if self.transform is not None:
             image = self.transform(image)
 

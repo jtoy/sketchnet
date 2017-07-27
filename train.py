@@ -68,18 +68,19 @@ def main(args):
     test_size = len(test_loader)
 
     # Build the models
-    encoder = EncoderCNN(args.embed_size,args.train_cnn)
-    print(encoder)
+    #encoder = EncoderCNN(args.embed_size,args.train_cnn)
+    #print(encoder)
     decoder = DecoderRNN(args.embed_size, args.hidden_size, len(vocab), args.num_layers,vocab)
     decoder = decoder
     print(decoder)
     if torch.cuda.is_available():
-        encoder.cuda()
+        #encoder.cuda()
         decoder.cuda()
 
     # Loss and Optimizer
     #criterion = nn.CrossEntropyLoss()
-    criterion = nn.SmoothL1Loss()
+    criterion = nn.MSELoss()
+    #criterion = nn.SmoothL1Loss()
     #params = list(decoder.parameters()) + list(encoder.linear.parameters()) + list(encoder.bn.parameters())
     params = list(decoder.parameters()) #+ list(encoder.linear.parameters()) + list(encoder.bn.parameters())
     optimizer = torch.optim.Adam(params, lr=args.learning_rate)
@@ -91,23 +92,22 @@ def main(args):
     for epoch in range(args.num_epochs):
         for i, (images, captions, lengths) in enumerate(data_loader):
             decoder.train()
-            encoder.train()
+            #encoder.train()
             # Set mini-batch dataset
             #image_ts = to_var(images, volatile=True)
             image_ts = to_var(images)
             #print("captoins lenrgth:"+str(captions.size()))
             captions = to_var(captions)
-            targets = pack_padded_sequence(captions, lengths, batch_first=True)[0]
             #print("padded captions lenrgth:"+str(targets.size()))
             count = images.size()[0]
             
             # Forward, Backward and Optimize
             decoder.zero_grad()
-            encoder.zero_grad()
-            features = encoder(image_ts)
+            #encoder.zero_grad()
+            #features = encoder(image_ts)
             #print("image_ts size"+str(image_ts.size()))
             #print("features size"+str(features.size()))
-            outputs = decoder(features, captions, lengths)
+            outputs = decoder(captions, lengths)
             #outputs = decoder(image_ts.view(image_ts.size()[0],-1), captions, lengths)
             #print("image size:" +str(images.size()))
             #print("targets size:" +str(targets.size()))
@@ -117,12 +117,14 @@ def main(args):
             loss.backward()
             optimizer.step()
 
-            total = targets.size(0)
-            _, predicted = torch.max(outputs.data, 1)
-            #correct = predicted.eq(targets.data).cpu().sum()
+            total = captions.size(0)
             correct = outputs.data.eq(image_ts.data).sum()
             accuracy = 100.*correct/total
             #accuracy =0.0
+            #print(image_ts.data[0].equal(image_ts.data[-1]))
+            #print("WTF")
+            #print(outputs.data[0].equal(outputs.data[-1]))
+            #print(outputs.size())
 
             if args.tensorboard:
                 cc_server.add_scalar_value("train_loss", loss.data[0])
@@ -134,7 +136,7 @@ def main(args):
                 #print(i)
                 for ii,t in enumerate(outputs):
                     result = transforms.ToPILImage()(t.data.cpu())
-                    result.save("./results/"+str(i)+"_"+str(ii)+".jpg")
+                    result.save("./results/"+str(i)+"_"+str(ii)+".png")
 
 
                 #print("first output"+str(outputs[0]))
@@ -150,12 +152,10 @@ def main(args):
                 torch.save(decoder.state_dict(), 
                            os.path.join(full_model_path, 
                                         'decoder-%d-%d.pkl' %(epoch+1, i+1)))
-                torch.save(encoder.state_dict(), 
-                           os.path.join(full_model_path, 
-                                        'encoder-%d-%d.pkl' %(epoch+1, i+1)))
+                #torch.save(encoder.state_dict(), os.path.join(full_model_path, 'encoder-%d-%d.pkl' %(epoch+1, i+1)))
                            
     torch.save(decoder.state_dict(), os.path.join(full_model_path, 'decoder-%d-%d.pkl' %(epoch+1, i+1)))
-    torch.save(encoder.state_dict(), os.path.join(full_model_path, 'encoder-%d-%d.pkl' %(epoch+1, i+1)))
+    #torch.save(encoder.state_dict(), os.path.join(full_model_path, 'encoder-%d-%d.pkl' %(epoch+1, i+1)))
     end_time = time.time()
     print("finished training, runtime: %d",[(end_time-start_time)])
                 
