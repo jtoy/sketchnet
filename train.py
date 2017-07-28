@@ -39,9 +39,9 @@ def main(args):
     # Image preprocessing
 
     transform = transforms.Compose([ 
-        transforms.Scale(args.crop_size),
-        transforms.ToTensor(), 
-        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+        #transforms.Scale(args.crop_size),
+        transforms.ToTensor()])
+        #transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
     mini_transform = transforms.Compose([ 
         transforms.ToPILImage(),
         transforms.Scale(20),
@@ -133,10 +133,18 @@ def main(args):
 
             # Print log info
             if i % args.log_step == 0:
-                #print(i)
+                #print("i "+str(i))
+                #torch.set_printoptions(profile="full")
                 for ii,t in enumerate(outputs):
                     result = transforms.ToPILImage()(t.data.cpu())
                     result.save("./results/"+str(i)+"_"+str(ii)+".png")
+                    origin = transforms.ToPILImage()(image_ts[ii].data.cpu())
+                    origin.save("./results/"+str(i)+"_"+str(ii)+"target.png")
+                    with open(("./results/"+str(i)+"_"+str(ii)+"_diff.txt"), 'w') as f:
+                        #f.write(str(torch.abs(t-image_ts[ii])))
+                        f.write(str(torch.abs(t-image_ts[ii]).sum()))
+                        #f.write(str(t))
+                        #f.write(str(image_ts))
 
 
                 #print("first output"+str(outputs[0]))
