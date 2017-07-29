@@ -89,6 +89,10 @@ class DecoderRNN(nn.Module):
         self.classifier = nn.Linear(hidden_size,4800)
         #self.bn = nn.BatchNorm1d(4800, momentum=0.01)
         self.vocab = vocab
+        net = VGG('VGG16')
+        modules = list(net.children())[:-1]      # delete the last fc layer.
+        self.net = nn.Sequential(*modules)
+        self.cnn_linear = nn.Linear(net.fc.in_features,4800)
         self.init_weights()
     
     def init_weights(self):
@@ -98,6 +102,8 @@ class DecoderRNN(nn.Module):
         self.linear.bias.data.fill_(0)
         self.classifier.weight.data.uniform_(-0.1, 0.1)
         self.classifier.bias.data.fill_(0)
+        self.cnn_linear.weight.data.normal_(0.0, 0.02)
+        self.cnn_linear.bias.data.fill_(0)
         
     def forward(self, captions, lengths):
         """Decode image feature vectors and generates captions."""
@@ -121,7 +127,12 @@ class DecoderRNN(nn.Module):
         #newh = hidden.view(-1, self.hidden_size)
         #print("newh:"+str(newh.size()))
         outputs = self.classifier(last)
+        outputs = outputs.view(outputs.size(0),3,40,40)
+        outputs = self.net(outputs)
         #outputs = self.bn(self.classifier(unpacked[0]))
+        #print(outputs.size())
+        outputs = outputs.view(outputs.size(0),-1)
+        outputs = self.cnn_linear(outputs)
         outputs = outputs.view(outputs.size(0),3,40,40)
         return outputs
     
