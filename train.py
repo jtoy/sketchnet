@@ -85,7 +85,6 @@ def main(args):
     params = list(decoder.parameters()) #+ list(encoder.linear.parameters()) + list(encoder.bn.parameters())
     optimizer = torch.optim.Adam(params, lr=args.learning_rate)
     start_time = time.time()
-    add_log_entry(args.name,start_time,vars(args))
     
     # Train the Models
     total_step = len(data_loader)
@@ -162,6 +161,7 @@ def main(args):
                                         'decoder-%d-%d.pkl' %(epoch+1, i+1)))
                 #torch.save(encoder.state_dict(), os.path.join(full_model_path, 'encoder-%d-%d.pkl' %(epoch+1, i+1)))
                            
+    add_log_entry(args.name,start_time,vars(args))
     torch.save(decoder.state_dict(), os.path.join(full_model_path, 'decoder-%d-%d.pkl' %(epoch+1, i+1)))
     #torch.save(encoder.state_dict(), os.path.join(full_model_path, 'encoder-%d-%d.pkl' %(epoch+1, i+1)))
     end_time = time.time()
