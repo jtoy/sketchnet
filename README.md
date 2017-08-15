@@ -7,32 +7,7 @@ can we teach a computer to draw pictures with code. We will use processing and j
 As far as we know, this should be the first working model to generate working usable code.
 
 
-# problem areas
-
-* The model will most likely fail to generate realistic looking images. future models will need to work with more realistic looking images
-
-* how do we measure performance of the model?  The model should generate valid code. We can use a javascript parser to know if we are generating valid code.  How can we know if the pictures are valid though? We can test if the images produce any color, which they should besides just white.  
-
-* what resolution should image be in? Should we expect images to be at the same scale?
-
-* do we care about care angles/fov ? or stick to one "angle"?
-
-
-
-# data collection
-
-
-
-General rule of thumb is 5000 images per category and 10 million examples to surpass human performance.
-
-We will try to write code to generate training data. Can we use genetic programming.  For the objective function, we can use 2 things, does it generate color? And is the image "interesting"? based off a neural network model.
-
-we want to avoid the random function as much as possible as we hypothesis that the model will not learn the random function.  
-
-
 # functions we are interested in modeling
-
-To help us generate data, we will need to think about what kinds of functions are interesting for us to teach the model
 
 * sin/cos
 * shapes: ellipse/rect/etc
@@ -60,31 +35,3 @@ To help us generate data, we will need to think about what kinds of functions ar
 * https://arxiv.org/abs/1705.07962 pix2code: Generating Code from a Graphical User Interface Screenshot
 * https://arxiv.org/pdf/1609.04938.pdf What You Get Is What You See: A Visual Markup Decompiler
 * https://arxiv.org/pdf/1511.07275.pdf LEARNING SIMPLE ALGORITHMS FROM EXAMPLES
-
-
-
-# notes on how to generate 10 million files
-
-each group of code should generate 10,000 variations, that is still 1k different types of files I need to come up with.
-Can I find people's scripts online?  if I do 100,000 variations, I can do 100 files by hand. We can try to use lamem net to choose the "good" looking images
-variants:
-* square of different colors covering the screen
-* shapes of different sizes and colors covering the screen
-* lines across the screen causing different gradients
-* different grid systems
-
-
-# TODOs
-
-* setup schedule and milestones
-* draw architect
-* setup research log
-* be able to regenerate test with code revision/data revision/hyper parameters
-* each training requires a unique path/model to store to, dont allow a default, we want to put the name of the revision in general
-
-# command to run
-
-## Prepare data
-
-## Training
-
